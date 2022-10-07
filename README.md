@@ -14,11 +14,11 @@ https://www.udemy.com/course/learn-ansible-advanced/
 ```
 - Clone this repo: `git clone https://github.com/dsnyder0pc/ansible-advanced-class.git`
 - Copy the directory 'ansible-advanced-class' to 'ansible-advanced-class-My'
+- Change directory to the repo folder (eg., `cd ansible-advanced-class_My`)
 - edit the Vagrantfile, 
   - change name of machines with the prefix my-
   - add the new my-db-and-web-1 for a machine with db and web server at the same machine
 
-- Change directory to the repo folder (eg., `cd ansible-advanced-class_My`)
 - run `vagrant up` to launch guests
 
 You'll start with three new virtual machines:
@@ -40,10 +40,10 @@ I've dropped a `class` symlink into the ansible user's homedir for your convenie
 ```
 ansible@my-controller:~$ cd class
 
-# ansible Playbook für manuelles migrieren von python 3.6.9 auf 3.8 (einschließlich upgrade ansible)
+# ansible Playbook for migrate setting manualy from python 3.6.9 to 3.8 (includes upgrade ansible)
 ansible@my-controller:~/class$ ansible-playbook playbook-02-10_uf.yaml -i inventory.txt --ask-vault-pass
 
-# ansible playbook für migrieren von Python 3.6.9 nach 3.8 mit Rollen
+# ansible playbook for migrate via Roles from Python 3.6.9 to 3.8 with Roles
 ansible@my-controller:~/class$ ansible-playbook playbook-13-01_uf.yaml -i inventory.txt --ask-vault-pass
 ```
 
