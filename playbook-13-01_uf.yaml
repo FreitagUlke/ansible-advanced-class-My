@@ -1,0 +1,50 @@
+---
+- name: Define packages and install Dependencies
+  hosts: all
+  roles:
+    - python
+    
+- hosts: all #Update PATH für neues ansible
+  environment:
+    PATH: "/home/ansible/.local/bin:{{ ansible_env.PATH }}"
+    when:
+- name: Install MySQL
+  hosts: db
+  roles:
+    - db
+    
+- name: Set MYSQL_DATABASE_HOST 4 my-web1 and my-web2
+  hosts: my-web1, my-web2
+  tasks:
+    - name: Set MYSQL_DATABASE_HOST 4 my-web1 and my-web2
+      shell: 'export MYSQL_DATABASE_HOST="my-db1"'
+      args:
+        executable: /bin/bash
+#      become: true
+  
+- name: Set MYSQL_DATABASE_HOST 4 my-db-and-web-1
+  hosts: my-db-and-web-1
+  tasks:
+    - name: Set MYSQL_DATABASE_HOST 4 my-db-and-web-1
+      shell: 'export MYSQL_DATABASE_HOST="my-db-and-web-1"'
+      args:
+        executable: /bin/bash
+#      become: true
+
+- name: Install, deploy code and ggf. Stop the App Server
+  hosts: web
+  roles:
+    - web
+    
+- name: Run Application Server
+  hosts: my-web1,my-web2
+  tasks:
+    - name: Run Application Server  
+      shell: 'MYSQL_DATABASE_HOST="my-db1" FLASK_APP=/opt/app.py nohup flask run --host=0.0.0.0 < /dev/null > ~/app.log 2>&1 &'
+
+  
+- name: Run Application Server
+  hosts: my-db-and-web-1
+  tasks:
+    - name: Run Application Server
+      shell: 'MYSQL_DATABASE_HOST="my-db-and-web-1" FLASK_APP=/opt/app.py nohup flask run --host=my-db-and-web-1 < /dev/null > ~/app.log 2>&1 &'

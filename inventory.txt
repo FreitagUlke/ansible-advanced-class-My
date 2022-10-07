@@ -1,0 +1,17 @@
+my-controller  ansible_host=192.168.77.81
+my-db1         ansible_host=192.168.77.82
+my-web1        ansible_host=192.168.77.83
+my-web2        ansible_host=192.168.77.84
+my-db-and-web-1  ansible_host=192.168.77.85
+
+[db]
+my-db1
+my-db-and-web-1
+
+[web]
+my-web1
+my-web2
+my-db-and-web-1
+
+[my_db_and_web]
+my-db-and-web-1

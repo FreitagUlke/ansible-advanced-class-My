@@ -1,0 +1,26 @@
+== Info: Rebuilt URL to: web2:5000/
+== Info:   Trying 192.168.77.74...
+== Info: TCP_NODELAY set
+== Info: Connected to web2 (192.168.77.74) port 5000 (#0)
+=> Send header, 73 bytes (0x49)
+0000: GET / HTTP/1.1
+0010: Host: web2:5000
+0021: User-Agent: curl/7.58.0
+003a: Accept: */*
+0047: 
+== Info: HTTP 1.0, assume close after body
+<= Recv header, 17 bytes (0x11)
+0000: HTTP/1.0 200 OK
+<= Recv header, 40 bytes (0x28)
+0000: Content-Type: text/html; charset=utf-8
+<= Recv header, 19 bytes (0x13)
+0000: Content-Length: 8
+<= Recv header, 37 bytes (0x25)
+0000: Server: Werkzeug/2.0.3 Python/3.6.9
+<= Recv header, 37 bytes (0x25)
+0000: Date: Mon, 12 Sep 2022 21:55:46 GMT
+<= Recv header, 2 bytes (0x2)
+0000: 
+<= Recv data, 8 bytes (0x8)
+0000: Welcome!
+== Info: Closing connection 0

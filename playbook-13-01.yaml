@@ -1,0 +1,15 @@
+---
+- name: Define packages and install Dependencies
+  hosts: all
+  roles:
+    - python
+
+- name: Install MySQL
+  hosts: db
+  roles:
+    - db
+
+- name: Install and run App Server
+  hosts: web
+  roles:
+    - web

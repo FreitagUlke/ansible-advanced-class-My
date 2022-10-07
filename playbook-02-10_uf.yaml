@@ -1,0 +1,175 @@
+---
+- name: Define packages and install Dependencies
+  hosts: all
+  tasks:
+    - name: "Load package names for {{ ansible_distribution }}"
+      include_vars: "{{ ansible_distribution }}.yaml"
+    - name: Install Dependencies
+      apt:
+        name: '{{ packages.base }}'
+        state: present
+      become: yes
+    - name: Generate /etc/hosts file
+      template:
+        src: etc/hosts.j2
+        dest: /etc/hosts
+        mode: '0644'
+      become: yes
+      
+- name: Install Python3.8
+  hosts: all
+  tasks:
+    - name: Configure PPA
+      shell: 'add-apt-repository --yes ppa:deadsnakes/ppa'
+      become: yes
+    - name: Update and upgrade apt packages
+      apt:
+        upgrade: yes
+        update_cache: yes
+      become: true
+    - name: Install all dependencies for python3.8
+      apt: name={{item}} state=present
+      with_items:
+        - python3.8
+        - python3.8-dev
+        - python3.8-venv
+      become: true
+    - name: update-alternatives python3.8 für python3 registrieren
+      shell: 'update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1'
+      args:
+        executable: /bin/bash
+      become: true
+    - name: update-alternatives python3 auf 3.8 setzen
+      shell: 'sudo update-alternatives --set python3 /usr/bin/python3.8'
+      args:
+        executable: /bin/bash
+      become: true
+      
+- name: Fix the apt-pkg
+  hosts: all
+  tasks:
+    - name: Check that the link apt_pkg.so exists
+      stat:
+        path: /usr/lib/python3/dist-packages/apt_pkg.so
+      register: stat_result
+    - name:  Navigate to default Python 3 and fix the apt_pkg
+      shell: 'ln -s apt_pkg.cpython-36m-x86_64-linux-gnu.so apt_pkg.so'
+      args:
+        executable: /bin/bash
+        chdir: /usr/lib/python3/dist-packages/
+      when: not stat_result.stat.exists
+      become: true     
+- name: Fallback and fix the python3 commond
+  hosts: all
+  tasks:
+    - name: Remove python3 link
+      shell: 'rm /usr/bin/python3 && ln -s /usr/bin/python3.6 /usr/bin/python3'
+      args:
+        executable: /bin/bash
+      become: true
+
+- name: Upgraden pip auf pip3.8
+  hosts: all
+  tasks:
+    - name: Download sources
+      get_url:
+        url: 'https://bootstrap.pypa.io/get-pip.py' 
+        dest: /tmp/get-pip.py        
+    - name: Upgrade pip
+      shell: 'python3.8 /tmp/get-pip.py && pip3.8 install ansible'
+      args:
+        executable: /bin/bash
+    - name: Update PATH für neues ansible
+      shell: 'export PATH="/home/ansible/.local/bin:$PATH"'
+      args:
+        executable: /bin/bash
+      become: true
+      
+- name: Install MySQL
+  vars:
+    db_name: employee_db
+    db_user: db_user
+    db_password: Passw0rd
+  hosts: db
+  tasks:
+    - name: "Load package names for {{ ansible_distribution }}"
+      include_vars: "{{ ansible_distribution }}.yaml"
+    - name: Install MySQL packages
+      apt:
+        name: '{{ packages.mysql }}'
+        state: present
+      become: yes
+    - name: Mysql für python 3.8 installieren
+      shell: 'pip3.8 install PyMySQL'
+      args:
+        executable: /bin/bash
+    - name: Configurate listen more than 127.0.0.1
+      shell: 'sed -i "s/bind-address/# bind-address/g" /etc/mysql/mysql.conf.d/mysqld.cnf'
+      args:
+        executable: /bin/bash
+      become: yes
+    - name: Start MySQL
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+      become: yes
+    - name: Ensure mysql is enabled to run on startup  
+      service: name=mysql state=started enabled=true
+      become: yes      
+    - name: Create Application Database
+      mysql_db:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: '{{ db_name }}'
+        state: present
+      become: yes
+    - name: Create Database User
+      mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: '{{ db_user }}'
+        password: '{{ db_password }}'
+        priv: '*.*:ALL'
+        state: present
+        host: '%'
+      no_log: yes
+      become: yes
+
+- name: Install and run App Server
+  hosts: web
+  tasks:
+    - name: "Load package names for {{ ansible_distribution }}"
+      include_vars: "{{ ansible_distribution }}.yaml"
+    - name: Install Flask
+      pip:
+        name: '{{ packages.flask }}'
+        state: present
+      become: yes
+    - name: Copy source code
+      shell: 'cp /vagrant/opt/app.py /opt/app.py -P'
+#        url: https://raw.githubusercontent.com/mmumshad/simple-webapp/master/app.py
+#        dest: /opt/app.py
+#        mode: 0555
+      args: 
+        executable: /bin/bash
+      become: yes
+- name: Set MYSQL_DATABASE_HOST 4 my-web1 and my-web2
+  hosts: my-web1, my-web2
+  tasks:
+    - name: Set MYSQL_DATABASE_HOST
+      shell: 'export MYSQL_DATABASE_HOST="my-db1"'
+      args:
+        executable: /bin/bash
+      become: true
+- name: Set MYSQL_DATABASE_HOST 4 my-db-and-web-1
+  hosts: my-db-and-web-1
+  tasks:
+    - name: Set MYSQL_DATABASE_HOST
+      shell: 'export MYSQL_DATABASE_HOST="my-db-and-web-1"'
+      args:
+        executable: /bin/bash
+      become: true
+- name: Run Application Server
+  hosts: web
+  tasks:
+    - name: Start Application
+      shell: 'FLASK_APP=/opt/app.py nohup flask run --host=0.0.0.0 < /dev/null > ~/app.log 2>&1 &'

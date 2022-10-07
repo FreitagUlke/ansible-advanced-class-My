@@ -1,0 +1,73 @@
+---
+- name: Define packages and install Dependencies
+  hosts: all
+  tasks:
+    - name: "Load package names for {{ ansible_distribution }}"
+      include_vars: "{{ ansible_distribution }}.yaml"
+    - name: Install Dependencies
+      apt:
+        name: '{{ packages.base }}'
+        state: present
+      become: yes
+    - name: Generate /etc/hosts file
+      template:
+        src: etc/hosts.j2
+        dest: /etc/hosts
+        mode: '0644'
+      become: yes
+
+- name: Install MySQL
+  vars:
+    db_name: employee_name
+    db_user: db_user
+    db_password: Passw0rd
+  hosts: db
+  tasks:
+    - name: "Load package names for {{ ansible_distribution }}"
+      include_vars: "{{ ansible_distribution }}.yaml"
+    - name: Install MySQL packages
+      apt:
+        name: '{{ packages.mysql }}'
+        state: present
+      become: yes
+    - name: Start MySQL
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+      become: yes
+    - name: Create Application Database
+      mysql_db:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: '{{ db_name }}'
+        state: present
+      become: yes
+    - name: Create Database User
+      mysql_user:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        name: '{{ db_user }}'
+        password: '{{ db_password }}'
+        priv: '*.*:ALL'
+        state: present
+        host: '%'
+      no_log: yes
+      become: yes
+
+- name: Install and run App Server
+  hosts: web
+  tasks:
+    - name: "Load package names for {{ ansible_distribution }}"
+      include_vars: "{{ ansible_distribution }}.yaml"
+    - name: Install Flask
+      pip:
+        name: '{{ packages.flask }}'
+        state: present
+      become: yes
+    - name: Copy source code
+      get_url:
+        url: https://raw.githubusercontent.com/mmumshad/simple-webapp/master/app.py
+        dest: /opt/app.py
+        mode: 0555
+      become: yes
+    - name: Start Application
+      shell: 'FLASK_APP=/opt/app.py nohup flask run --host=0.0.0.0 < /dev/null > ~/app.log 2>&1 &'

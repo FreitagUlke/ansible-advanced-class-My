@@ -1,0 +1,7 @@
+# Sample Ansible Playbook1.yml
+-
+  name: Debug Something
+  hosts: my-controller
+  tasks:
+     - custom_debug:
+         msg: 'This is test message'
