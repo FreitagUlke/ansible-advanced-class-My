@@ -1,0 +1,84 @@
+---
+# tasks file for python
+- name: "Load package names for {{ ansible_distribution }}"
+  include_vars: "{{ ansible_distribution }}.yaml"
+- name: Install Dependencies
+  apt:
+    name: '{{ packages.base }}'
+    state: present
+  become: yes
+- name: Generate /etc/hosts file
+  template:
+    src: etc/hosts.j2
+    dest: /etc/hosts
+    mode: '0644'
+  become: yes
+  
+# up here from UF
+- name: Configure PPA
+  shell: 'add-apt-repository --yes ppa:deadsnakes/ppa'
+  args:
+    executable: /bin/bash
+  become: yes
+  
+- name: Update and upgrade apt packages
+  apt:
+    upgrade: yes
+    update_cache: yes
+  become: true
+  
+- name: Install all dependencies for python3.8
+  apt: name={{item}} state=present
+  with_items:
+    - python3.8
+    - python3.8-dev
+    - python3.8-venv
+  become: true
+  
+- name: update-alternatives python3.8 für python3 registrieren
+  shell: 'update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1'
+  args:
+    executable: /bin/bash
+  become: true
+  
+- name: update-alternatives python3 auf 3.8 setzen
+  shell: 'sudo update-alternatives --set python3 /usr/bin/python3.8'
+  args:
+    executable: /bin/bash
+  become: true
+      
+- name: Check that the link apt_pkg.so exists
+  stat:
+    path: /usr/lib/python3/dist-packages/apt_pkg.so
+  register: stat_result
+  
+- name:  Fix the apt-pkg -> Navigate to default Python 3 and fix the apt_pkg
+  shell: 'ln -s apt_pkg.cpython-36m-x86_64-linux-gnu.so apt_pkg.so'
+  args:
+    executable: /bin/bash
+    chdir: /usr/lib/python3/dist-packages/
+  when: not stat_result.stat.exists
+  become: true   
+  
+- name: Fallback and fix the python3 commond -> Remove python3 link
+  shell: 'rm /usr/bin/python3 && ln -s /usr/bin/python3.6 /usr/bin/python3'
+  args:
+    executable: /bin/bash
+  become: true
+
+- name: Upgraden pip auf pip3.8 ->Download sources
+  get_url:
+    url: 'https://bootstrap.pypa.io/get-pip.py' 
+    dest: /tmp/get-pip.py   
+    
+- name: Upgraden pip auf pip3.8 
+  shell: 'python3.8 /tmp/get-pip.py --no-warn-script-location && pip3.8 install ansible --no-warn-script-location'
+  args:
+    executable: /bin/bash
+  
+#- hosts: all #Update PATH für neues ansible
+#  environment:
+#    PATH: "/home/ansible/.local/bin:{{ ansible_env.PATH }}"
+  
+#  become: true
+# end UF

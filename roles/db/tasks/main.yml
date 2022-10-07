@@ -1,0 +1,63 @@
+---
+# tasks file for db
+- name: "Load package names for {{ ansible_distribution }}"
+  include_vars: "{{ ansible_distribution }}.yaml"
+- name: Install MySQL packages
+  apt:
+    name: '{{ packages.mysql }}'
+    state: present
+  become: yes
+# up here from UF
+- name: Mysql für python 3.8 installieren
+  shell: 'pip3.8 install PyMySQL'
+  args:
+    executable: /bin/bash
+#- name: Configurate listen more than 127.0.0.1
+#  shell: 'sed -i "s/bind-address/# bind-address/g" /etc/mysql/mysql.conf.d/mysqld.cnf'
+#  args:
+#    executable: /bin/bash
+#  become: yes
+# end UF
+- name: Listen to public address
+  lineinfile:
+   path: /etc/mysql/mysql.conf.d/mysqld.cnf
+   regexp: "^bind-addres"
+   line: "bind-address = 0.0.0.0"
+   state: present
+  become: yes
+- name: Start MySQL
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+  become: yes
+# up here from UF
+- name: Ensure mysql is enabled to run on startup  
+  service: name=mysql state=started enabled=true
+  become: yes  
+# end UF
+#- name: Listen to public address
+#  lineinfile:
+#   path: /etc/mysql/mysql.conf.d/mysqld.cnf
+#   regexp: "^bind-addres"
+#   line: "bind-address = 0.0.0.0"
+#   state: present
+#  become: yes
+#  notify:
+#    - restart mysql
+- name: Create Application Database
+  mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: '{{ db_name }}'
+    state: present
+  become: yes
+- name: Create Database User
+  mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: '{{ db_user }}'
+    password: '{{ db_password }}'
+    priv: '*.*:ALL'
+    state: present
+    host: '%'
+  no_log: yes
+  become: yes

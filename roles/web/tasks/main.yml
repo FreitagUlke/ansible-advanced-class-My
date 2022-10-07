@@ -1,0 +1,48 @@
+---
+# tasks file for web
+- name: "Load package names for {{ ansible_distribution }}"
+  include_vars: "{{ ansible_distribution }}.yaml"
+- name: Install Flask
+  pip:
+    name: '{{ packages.flask }}'
+    state: present
+  become: yes
+# - name: Copy source code
+# get_url:
+#   url: https://raw.githubusercontent.com/mmumshad/simple-webapp/master/app.py
+#     dest: /opt/app.py
+#    mode: 0555
+# become: yes
+# - name: Start Application
+#  shell: 'MYSQL_DATABASE_HOST=db1 FLASK_APP=/opt/app.py nohup flask run --host=0.0.0.0 < /dev/null > ~/app.log 2>&1 &'
+- name: Copy source code Application
+  shell: 'cp /vagrant/opt/app.py /opt/app.py -P'
+  args: 
+    executable: /bin/bash
+  become: yes
+
+- name: Copy source code Application
+  shell: 'chmod 755 /opt/app.py'
+  args: 
+    executable: /bin/bash
+  become: yes
+
+- name: Copy source code killWebServer.sh
+  shell: 'cp /vagrant/opt/killWebServer.sh /opt/killWebServer.sh -P'
+  args:
+    executable: /bin/bash
+  become: yes
+  
+- name: Copy source code killWebServer.sh
+  shell: 'chmod 750 /opt/killWebServer.sh'
+  args:
+    executable: /bin/bash
+  become: yes
+  
+- name: Stop Webserver
+  shell: '/opt/killWebServer.sh flask'
+  args:
+    executable: /bin/bash
+  become: true  
+  
+
