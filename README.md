@@ -21,7 +21,7 @@ https://www.udemy.com/course/learn-ansible-advanced/
 
 - run `vagrant up` to launch guests
 
-You'll start with three new virtual machines:
+You'll start with 4 new virtual machines (additional to the my-controller:
 ```
 $ vagrant status
 Current machine states:
